@@ -1,7 +1,126 @@
+function ANIMATION_SLEEP () {
+    basic.showLeds(`
+        . # # # #
+        . . . # .
+        . . # . .
+        . # # # #
+        . . . . .
+        `)
+    basic.showLeds(`
+        . . . . .
+        # # # # .
+        . . # . .
+        . # . . .
+        # # # # .
+        `)
+}
+function ANIMATION_HAPPY () {
+    basic.showLeds(`
+        . . . . .
+        . # . # .
+        . . . . .
+        # . . . #
+        . # # # .
+        `)
+}
+function ANIMATION_EAT () {
+    for (let index = 0; index < 2; index++) {
+        basic.showLeds(`
+            . # . # .
+            . . . . .
+            . # # # .
+            . # . # .
+            . . # . .
+            `)
+        basic.showLeds(`
+            . . . . .
+            . # . # .
+            . . . . .
+            . # # # .
+            . . . . .
+            `)
+    }
+}
+function ANIMATION_SHAKE () {
+    basic.showLeds(`
+        . . . . .
+        . # . # .
+        . . . . .
+        # # # # #
+        # # # # #
+        `)
+    basic.pause(1000)
+    basic.showLeds(`
+        . . . . .
+        . # . # .
+        . . . . .
+        . # # # .
+        . . . . .
+        `)
+    basic.pause(10000)
+}
 // Gaming
 input.onButtonPressed(Button.A, function () {
+    ANIMATION_GAME()
     isIddle = false
     music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Nyan), music.PlaybackMode.InBackground)
+    healthPoints += HEALTH_GAME_ADDITION
+    music.stopMelody(MelodyStopOptions.Background)
+    isIddle = true
+})
+function ANIMATION_BASE () {
+    basic.showLeds(`
+        . . . . .
+        . # . # .
+        . . . . .
+        . # # # .
+        . . . . .
+        `)
+}
+function ANIMATION_STATUS (hp: number) {
+    healthPerCell = HEALTH_MAX / 25
+    fullCells = Math.floor(hp / healthPerCell)
+    remainder = hp % healthPerCell
+    basic.clearScreen()
+    for (let y = 0; y <= 4; y++) {
+        for (let x = 0; x <= 4; x++) {
+            cellIndex = x + y * 5
+            if (cellIndex < fullCells) {
+                led.plotBrightness(x, y, 255)
+            } else if (cellIndex == fullCells && remainder > 0) {
+                led.plotBrightness(x, y, Math.floor(remainder / healthPerCell * 255))
+            } else {
+                led.plotBrightness(x, y, 0)
+            }
+        }
+    }
+    basic.pause(2000)
+    basic.showLeds(`
+        . . . . .
+        . # . # .
+        . . . . .
+        . # # # .
+        . . . . .
+        `)
+}
+function ANIMATION_WAKEUP () {
+    basic.showLeds(`
+        . # . # .
+        . . . . .
+        # # # # #
+        # . . . #
+        . # # # .
+        `)
+    basic.pause(1000)
+    basic.showLeds(`
+        . . . . .
+        . # . # .
+        . . . . .
+        . # # # .
+        . . . . .
+        `)
+}
+function ANIMATION_GAME () {
     basic.showLeds(`
         . . . . .
         . # . . .
@@ -135,16 +254,23 @@ input.onButtonPressed(Button.A, function () {
         . . . . .
         . . . . .
         `)
-    healthPoints += HEALTH_GAME_ADDITION
-    music.stopMelody(MelodyStopOptions.Background)
-    isIddle = true
-})
+    ANIMATION_HAPPY()
+}
 // Status
 input.onButtonPressed(Button.AB, function () {
     isIddle = false
-    displayHealth(healthPoints)
+    ANIMATION_STATUS(healthPoints)
     isIddle = true
 })
+function ANIMATION_SAD () {
+    basic.showLeds(`
+        . . . . .
+        . # . # .
+        . . . . .
+        . # # # .
+        # . . . #
+        `)
+}
 // Abusing
 input.onGesture(Gesture.Shake, function () {
     if (isDied == false && isIddle == true) {
@@ -152,22 +278,7 @@ input.onGesture(Gesture.Shake, function () {
         isSleep = false
         isIddle = false
         music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
-        basic.showLeds(`
-            . . . . .
-            . # . # .
-            . . . . .
-            # # # # #
-            # # # # #
-            `)
-        basic.pause(1000)
-        basic.showLeds(`
-            . . . . .
-            . # . # .
-            . . . . .
-            . # # # .
-            . . . . .
-            `)
-        basic.pause(10000)
+        ANIMATION_SHAKE()
         healthPoints += HEALTH_SHAKE_DEDUCTION
         isIddle = true
     }
@@ -176,57 +287,32 @@ input.onGesture(Gesture.Shake, function () {
 input.onLogoEvent(TouchButtonEvent.Pressed, function () {
     isIddle = false
     music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
-    for (let index = 0; index < 2; index++) {
-        basic.showLeds(`
-            . # . # .
-            . . . . .
-            . # # # .
-            . # . # .
-            . . # . .
-            `)
-        basic.showLeds(`
-            . . . . .
-            . # . # .
-            . . . . .
-            . # # # .
-            . . . . .
-            `)
-    }
+    ANIMATION_EAT()
     healthPoints += HEALTH_EAT_ADDITION
     isIddle = true
 })
-function displayHealth (hp: number) {
-    healthPerCell = HEALTH_MAX / 25
-    fullCells = Math.floor(hp / healthPerCell)
-    remainder = hp % healthPerCell
-    basic.clearScreen()
-    for (let y = 0; y <= 4; y++) {
-        for (let x = 0; x <= 4; x++) {
-            cellIndex = x + y * 5
-            if (cellIndex < fullCells) {
-                led.plotBrightness(x, y, 255)
-            } else if (cellIndex == fullCells && remainder > 0) {
-                led.plotBrightness(x, y, Math.floor(remainder / healthPerCell * 255))
-            } else {
-                led.plotBrightness(x, y, 0)
-            }
-        }
-    }
-    basic.pause(2000)
+function ANIMATION_LOOK () {
     basic.showLeds(`
         . . . . .
-        . # . # .
+        . . # . #
+        . . . . .
+        . # # # .
+        . . . . .
+        `)
+    basic.showLeds(`
+        . . . . .
+        # . # . .
         . . . . .
         . # # # .
         . . . . .
         `)
 }
+let isSleep = false
+let isDied = false
 let cellIndex = 0
 let remainder = 0
 let fullCells = 0
 let healthPerCell = 0
-let isSleep = false
-let isDied = false
 let isIddle = false
 let healthPoints = 0
 let HEALTH_SHAKE_DEDUCTION = 0
@@ -243,34 +329,14 @@ let HEALTH_DEFAULT_DEDUCTION = -1
 healthPoints = HEALTH_MAX
 isIddle = false
 music._playDefaultBackground(music.builtInPlayableMelody(Melodies.JumpUp), music.PlaybackMode.InBackground)
-basic.showLeds(`
-    . # . # .
-    . . . . .
-    # # # # #
-    # . . . #
-    . # # # .
-    `)
-basic.pause(1000)
-basic.showLeds(`
-    . . . . .
-    . # . # .
-    . . . . .
-    . # # # .
-    . . . . .
-    `)
+ANIMATION_WAKEUP()
 isIddle = true
 // Dying
 loops.everyInterval(1000, function () {
     if (isDied == false && isSleep == false) {
         healthPoints += HEALTH_DEFAULT_DEDUCTION
         if (healthPoints < 0) {
-            basic.showLeds(`
-                . . . . .
-                . # . # .
-                . . . . .
-                . # # # .
-                # . . . #
-                `)
+            ANIMATION_SAD()
             music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Dadadadum), music.PlaybackMode.InBackground)
             isDied = true
         }
@@ -280,59 +346,12 @@ loops.everyInterval(1000, function () {
 loops.everyInterval(600000, function () {
     if (isDied == false && isSleep == false) {
         if (isIddle == false) {
-            basic.showLeds(`
-                . . . . .
-                . # . # .
-                . . . . .
-                . # # # .
-                . . . . .
-                `)
+            ANIMATION_BASE()
         } else {
-            basic.showLeds(`
-                . . . . .
-                . # . # .
-                . . . . .
-                . # # # .
-                . . . . .
-                `)
+            ANIMATION_BASE()
             basic.pause(10000)
-            basic.showLeds(`
-                . . . . .
-                . . # . #
-                . . . . .
-                . # # # .
-                . . . . .
-                `)
-            basic.showLeds(`
-                . . . . .
-                # . # . .
-                . . . . .
-                . # # # .
-                . . . . .
-                `)
-            basic.showLeds(`
-                . . . . .
-                . # . # .
-                . . . . .
-                . # # # .
-                . . . . .
-                `)
-            basic.pause(2000)
-            basic.showLeds(`
-                . . . . .
-                # # . # #
-                . . . . .
-                . . # . .
-                . . . . .
-                `)
-            basic.pause(2000)
-            basic.showLeds(`
-                . . . . .
-                . # . # .
-                . . . . .
-                . # # # .
-                . . . . .
-                `)
+            ANIMATION_LOOK()
+            ANIMATION_BASE()
         }
     }
 })
@@ -341,38 +360,12 @@ loops.everyInterval(500, function () {
     if (isDied == false && isIddle == true) {
         if (input.lightLevel() <= 10) {
             isSleep = true
-            basic.showLeds(`
-                . # # # #
-                . . . # .
-                . . # . .
-                . # # # #
-                . . . . .
-                `)
-            basic.showLeds(`
-                . . . . .
-                # # # # .
-                . . # . .
-                . # . . .
-                # # # # .
-                `)
+            ANIMATION_SLEEP()
             healthPoints += HEALTH_SLEEP_ADDITION
         } else {
             if (isSleep == true) {
-                basic.showLeds(`
-                    . # . # .
-                    . . . . .
-                    . # # # .
-                    . # . # .
-                    . # # # .
-                    `)
                 music.play(music.builtinPlayableSoundEffect(soundExpression.yawn), music.PlaybackMode.UntilDone)
-                basic.showLeds(`
-                    . . . . .
-                    . # . # .
-                    . . . . .
-                    . # # # .
-                    . . . . .
-                    `)
+                ANIMATION_WAKEUP()
                 isSleep = false
             }
         }
