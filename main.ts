@@ -61,9 +61,9 @@ function ANIMATION_SHAKE () {
 }
 // Gaming
 input.onButtonPressed(Button.A, function () {
-    ANIMATION_GAME()
     isIddle = false
     music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Nyan), music.PlaybackMode.InBackground)
+    ANIMATION_GAME()
     healthPoints += HEALTH_GAME_ADDITION
     music.stopMelody(MelodyStopOptions.Background)
     isIddle = true
@@ -274,7 +274,6 @@ function ANIMATION_SAD () {
 // Abusing
 input.onGesture(Gesture.Shake, function () {
     if (isDied == false && isIddle == true) {
-        led.stopAnimation()
         isSleep = false
         isIddle = false
         music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
@@ -319,7 +318,6 @@ let HEALTH_SHAKE_DEDUCTION = 0
 let HEALTH_GAME_ADDITION = 0
 let HEALTH_EAT_ADDITION = 0
 let HEALTH_MAX = 0
-let maxBrightness = 0
 HEALTH_MAX = 10000
 HEALTH_EAT_ADDITION = 60
 HEALTH_GAME_ADDITION = 30
@@ -336,9 +334,10 @@ loops.everyInterval(1000, function () {
     if (isDied == false && isSleep == false) {
         healthPoints += HEALTH_DEFAULT_DEDUCTION
         if (healthPoints < 0) {
-            ANIMATION_SAD()
             music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Dadadadum), music.PlaybackMode.InBackground)
+            ANIMATION_SAD()
             isDied = true
+            isIddle = false
         }
     }
 })
@@ -360,6 +359,7 @@ loops.everyInterval(500, function () {
     if (isDied == false && isIddle == true) {
         if (input.lightLevel() <= 10) {
             isSleep = true
+            isIddle = false
             ANIMATION_SLEEP()
             healthPoints += HEALTH_SLEEP_ADDITION
         } else {
@@ -367,6 +367,7 @@ loops.everyInterval(500, function () {
                 music.play(music.builtinPlayableSoundEffect(soundExpression.yawn), music.PlaybackMode.UntilDone)
                 ANIMATION_WAKEUP()
                 isSleep = false
+                isIddle = true
             }
         }
     }
