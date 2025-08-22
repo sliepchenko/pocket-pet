@@ -32,13 +32,7 @@ function ANIMATION_EAT () {
             . # . # .
             . . # . .
             `)
-        basic.showLeds(`
-            . . . . .
-            . # . # .
-            . . . . .
-            . # # # .
-            . . . . .
-            `)
+        ANIMATION_DEFAULT()
     }
 }
 function ANIMATION_SHAKE () {
@@ -50,6 +44,10 @@ function ANIMATION_SHAKE () {
         # # # # #
         `)
     basic.pause(1000)
+    ANIMATION_DEFAULT()
+    basic.pause(10000)
+}
+function ANIMATION_DEFAULT () {
     basic.showLeds(`
         . . . . .
         . # . # .
@@ -57,7 +55,6 @@ function ANIMATION_SHAKE () {
         . # # # .
         . . . . .
         `)
-    basic.pause(10000)
 }
 // Gaming
 input.onButtonPressed(Button.A, function () {
@@ -68,15 +65,6 @@ input.onButtonPressed(Button.A, function () {
     music.stopMelody(MelodyStopOptions.Background)
     isIddle = true
 })
-function ANIMATION_BASE () {
-    basic.showLeds(`
-        . . . . .
-        . # . # .
-        . . . . .
-        . # # # .
-        . . . . .
-        `)
-}
 function ANIMATION_STATUS (hp: number) {
     healthPerCell = HEALTH_MAX / 25
     fullCells = Math.floor(hp / healthPerCell)
@@ -95,13 +83,7 @@ function ANIMATION_STATUS (hp: number) {
         }
     }
     basic.pause(2000)
-    basic.showLeds(`
-        . . . . .
-        . # . # .
-        . . . . .
-        . # # # .
-        . . . . .
-        `)
+    ANIMATION_DEFAULT()
 }
 function ANIMATION_WAKEUP () {
     basic.showLeds(`
@@ -112,13 +94,7 @@ function ANIMATION_WAKEUP () {
         . # # # .
         `)
     basic.pause(1000)
-    basic.showLeds(`
-        . . . . .
-        . # . # .
-        . . . . .
-        . # # # .
-        . . . . .
-        `)
+    ANIMATION_DEFAULT()
 }
 function ANIMATION_GAME () {
     basic.showLeds(`
@@ -255,6 +231,7 @@ function ANIMATION_GAME () {
         . . . . .
         `)
     ANIMATION_HAPPY()
+    ANIMATION_DEFAULT()
 }
 // Status
 input.onButtonPressed(Button.AB, function () {
@@ -270,6 +247,7 @@ function ANIMATION_SAD () {
         . # # # .
         # . . . #
         `)
+    ANIMATION_DEFAULT()
 }
 // Abusing
 input.onGesture(Gesture.Shake, function () {
@@ -282,6 +260,15 @@ input.onGesture(Gesture.Shake, function () {
         isIddle = true
     }
 })
+function ANIMATION_DEAD () {
+    basic.showLeds(`
+        . # . # .
+        # # . # #
+        . . . . .
+        . # # # .
+        . # . # .
+        `)
+}
 // Feeding
 input.onLogoEvent(TouchButtonEvent.Pressed, function () {
     isIddle = false
@@ -329,33 +316,8 @@ isIddle = false
 music._playDefaultBackground(music.builtInPlayableMelody(Melodies.JumpUp), music.PlaybackMode.InBackground)
 ANIMATION_WAKEUP()
 isIddle = true
-// Dying
-loops.everyInterval(1000, function () {
-    if (isDied == false && isSleep == false) {
-        healthPoints += HEALTH_DEFAULT_DEDUCTION
-        if (healthPoints < 0) {
-            music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Dadadadum), music.PlaybackMode.InBackground)
-            ANIMATION_SAD()
-            isDied = true
-            isIddle = false
-        }
-    }
-})
-// Iddling
-loops.everyInterval(600000, function () {
-    if (isDied == false && isSleep == false) {
-        if (isIddle == false) {
-            ANIMATION_BASE()
-        } else {
-            ANIMATION_BASE()
-            basic.pause(10000)
-            ANIMATION_LOOK()
-            ANIMATION_BASE()
-        }
-    }
-})
 // Sleeping
-loops.everyInterval(500, function () {
+loops.everyInterval(1000, function () {
     if (isDied == false && isIddle == true) {
         if (input.lightLevel() <= 10) {
             isSleep = true
@@ -369,6 +331,31 @@ loops.everyInterval(500, function () {
                 isSleep = false
                 isIddle = true
             }
+        }
+    }
+})
+// Dying
+loops.everyInterval(1000, function () {
+    if (isDied == false && isSleep == false) {
+        healthPoints += HEALTH_DEFAULT_DEDUCTION
+        if (healthPoints < 0) {
+            music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Dadadadum), music.PlaybackMode.InBackground)
+            ANIMATION_DEAD()
+            isDied = true
+            isIddle = false
+        }
+    }
+})
+// Iddling
+loops.everyInterval(600000, function () {
+    if (isDied == false && isSleep == false) {
+        if (isIddle == false) {
+            ANIMATION_DEFAULT()
+        } else {
+            ANIMATION_DEFAULT()
+            basic.pause(10000)
+            ANIMATION_LOOK()
+            ANIMATION_DEFAULT()
         }
     }
 })
