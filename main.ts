@@ -22,6 +22,7 @@ function ANIMATION_HAPPY () {
         # . . . #
         . # # # .
         `)
+    ANIMATION_DEFAULT()
 }
 function ANIMATION_EAT () {
     for (let index = 0; index < 2; index++) {
@@ -45,7 +46,7 @@ function ANIMATION_SHAKE () {
         `)
     basic.pause(1000)
     ANIMATION_DEFAULT()
-    basic.pause(10000)
+    basic.pause(3000)
 }
 function ANIMATION_DEFAULT () {
     basic.showLeds(`
@@ -231,7 +232,6 @@ function ANIMATION_GAME () {
         . . . . .
         `)
     ANIMATION_HAPPY()
-    ANIMATION_DEFAULT()
 }
 // Status
 input.onButtonPressed(Button.AB, function () {
@@ -324,12 +324,14 @@ loops.everyInterval(1000, function () {
             isIddle = false
             ANIMATION_SLEEP()
             healthPoints += HEALTH_SLEEP_ADDITION
+            isIddle = true
         } else {
             if (isSleep == true) {
-                music.play(music.builtinPlayableSoundEffect(soundExpression.yawn), music.PlaybackMode.UntilDone)
+                isIddle = false
+                music._playDefaultBackground(music.builtInPlayableMelody(Melodies.JumpUp), music.PlaybackMode.InBackground)
                 ANIMATION_WAKEUP()
                 isSleep = false
-                isIddle = true
+                isIddle = false
             }
         }
     }
@@ -347,15 +349,14 @@ loops.everyInterval(1000, function () {
     }
 })
 // Iddling
-loops.everyInterval(600000, function () {
+loops.everyInterval(60000, function () {
     if (isDied == false && isSleep == false) {
         if (isIddle == false) {
             ANIMATION_DEFAULT()
         } else {
-            ANIMATION_DEFAULT()
-            basic.pause(10000)
             ANIMATION_LOOK()
             ANIMATION_DEFAULT()
+            basic.pause(2000)
         }
     }
 })
