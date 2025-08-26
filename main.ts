@@ -1,361 +1,456 @@
-function ANIMATION_SLEEP () {
-    basic.showLeds(`
-        . # # # #
-        . . . # .
-        . . # . .
-        . # # # #
-        . . . . .
-        `)
-    basic.showLeds(`
-        . . . . .
-        # # # # .
-        . . # . .
-        . # . . .
-        # # # # .
-        `)
-}
-function ANIMATION_HAPPY () {
-    basic.showLeds(`
-        . . . . .
-        . # . # .
-        . . . . .
-        # . . . #
-        . # # # .
-        `)
-}
-function ANIMATION_EAT () {
-    for (let index = 0; index < 2; index++) {
-        basic.showLeds(`
-            . # . # .
-            . . . . .
-            . # # # .
-            . # . # .
-            . . # . .
-            `)
-        ANIMATION_DEFAULT()
+class VirtualPet {
+    static readonly HEALTH_MAX = 10000;
+    static readonly HEALTH_SHAKE_DEDUCTION = -30;
+    static readonly HEALTH_GAME_ADDITION = 30;
+    static readonly HEALTH_EAT_ADDITION = 60;
+    static readonly HEALTH_SLEEP_ADDITION = 1;
+    static readonly HEALTH_DEFAULT_DEDUCTION = -1;
+
+    private isSleep = false;
+    private isDied = false;
+    private isIdle = false;
+
+    private healthPoints = 0;
+
+    constructor() {
+        this.healthPoints = VirtualPet.HEALTH_MAX;
+
+        this.onWakeUp();
+
+        input.onButtonPressed(Button.A, () => this.onGame());
+        input.onButtonPressed(Button.AB, () => this.onStatus());
+
+        input.onLogoEvent(TouchButtonEvent.Pressed, () => this.onFeed());
+
+        input.onGesture(Gesture.Shake, () => this.onShake());
+
+        loops.everyInterval(1000, () => this.onSleeping());
+        loops.everyInterval(1000, () => this.onDying());
+        loops.everyInterval(600000, () => this.onIdling());
     }
-}
-function ANIMATION_SHAKE () {
-    basic.showLeds(`
-        . . . . .
-        . # . # .
-        . . . . .
-        # # # # #
-        # # # # #
-        `)
-    basic.pause(1000)
-    ANIMATION_DEFAULT()
-    basic.pause(10000)
-}
-function ANIMATION_DEFAULT () {
-    basic.showLeds(`
-        . . . . .
-        . # . # .
-        . . . . .
-        . # # # .
-        . . . . .
-        `)
-}
-// Gaming
-input.onButtonPressed(Button.A, function () {
-    isIddle = false
-    music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Nyan), music.PlaybackMode.InBackground)
-    ANIMATION_GAME()
-    healthPoints += HEALTH_GAME_ADDITION
-    music.stopMelody(MelodyStopOptions.Background)
-    isIddle = true
-})
-function ANIMATION_STATUS (hp: number) {
-    healthPerCell = HEALTH_MAX / 25
-    fullCells = Math.floor(hp / healthPerCell)
-    remainder = hp % healthPerCell
-    basic.clearScreen()
-    for (let y = 0; y <= 4; y++) {
-        for (let x = 0; x <= 4; x++) {
-            cellIndex = x + y * 5
-            if (cellIndex < fullCells) {
-                led.plotBrightness(x, y, 255)
-            } else if (cellIndex == fullCells && remainder > 0) {
-                led.plotBrightness(x, y, Math.floor(remainder / healthPerCell * 255))
+
+    private onWakeUp() {
+        this.isIdle = false;
+
+        Sounds.WAKEUP();
+        Animations.WAKEUP();
+
+        this.isIdle = true;
+    }
+
+    private onGame() {
+        this.isIdle = false;
+
+        Sounds.GAME();
+        Animations.GAME();
+        Sounds.STOP();
+
+        basic.pause(1000);
+
+        Animations.HAPPY();
+        Sounds.HAPPY();
+
+        this.healthPoints += VirtualPet.HEALTH_GAME_ADDITION;
+
+        this.isIdle = true;
+    }
+
+    private onStatus() {
+        this.isIdle = false;
+
+        Animations.STATUS(this.healthPoints, VirtualPet.HEALTH_MAX);
+
+        this.isIdle = true;
+    }
+
+    private onFeed() {
+        this.isIdle = false;
+
+        Sounds.EAT();
+        Animations.EAT();
+
+        this.healthPoints += VirtualPet.HEALTH_EAT_ADDITION;
+
+        this.isIdle = true;
+    }
+
+    private onShake() {
+        if (!this.isDied && this.isIdle) {
+            this.isSleep = false;
+            this.isIdle = false;
+
+            Sounds.STOP();
+            Sounds.SHAKE();
+            Animations.SHAKE();
+            basic.pause(3000);
+
+            this.healthPoints += VirtualPet.HEALTH_SHAKE_DEDUCTION;
+
+            this.isIdle = true;
+        }
+    }
+
+    private onSleeping() {
+        if (!this.isDied && this.isIdle) {
+            if (input.lightLevel() <= 10) {
+                this.isSleep = true;
+
+                Animations.SLEEP();
+
+                this.healthPoints += VirtualPet.HEALTH_SLEEP_ADDITION;
             } else {
-                led.plotBrightness(x, y, 0)
+                if (this.isSleep) {
+                    Sounds.WAKEUP();
+                    Animations.WAKEUP();
+
+                    this.isSleep = false;
+                }
             }
         }
     }
-    basic.pause(2000)
-    ANIMATION_DEFAULT()
+
+    private onDying() {
+        if (!this.isDied && !this.isSleep) {
+            this.healthPoints += VirtualPet.HEALTH_DEFAULT_DEDUCTION;
+
+            if (this.healthPoints < 0) {
+                this.isIdle = false;
+                this.isDied = true;
+
+                Sounds.DEAD();
+                Animations.DEAD();
+            }
+        }
+    }
+
+    private onIdling() {
+        if (!this.isDied && !this.isSleep) {
+            this.isIdle = false;
+
+            basic.pause(3000);
+            Animations.LOOK();
+            Animations.DEFAULT();
+            basic.pause(2000);
+
+            this.isIdle = true;
+        }
+    }
 }
-function ANIMATION_WAKEUP () {
-    basic.showLeds(`
-        . # . # .
-        . . . . .
-        # # # # #
-        # . . . #
-        . # # # .
-        `)
-    basic.pause(1000)
-    ANIMATION_DEFAULT()
-}
-function ANIMATION_GAME () {
-    basic.showLeds(`
+
+class Animations {
+    static SLEEP() {
+        basic.showLeds(`
+            . # # # #
+            . . . # .
+            . . # . .
+            . # # # #
+            . . . . .
+        `);
+        basic.showLeds(`
+            . . . . .
+            # # # # .
+            . . # . .
+            . # . . .
+            # # # # .
+        `);
+    }
+
+    static HAPPY() {
+        basic.showLeds(`
+            . . . . .
+            . # . # .
+            . . . . .
+            # . . . #
+            . # # # .
+        `);
+        Animations.DEFAULT();
+    }
+
+    static GAME() {
+        basic.showLeds(`
         . . . . .
         . # . . .
         . . . . .
         . . . . .
         # . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . .
         . # . . .
         . . . . .
         # . . . .
         # . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . .
         . # . . .
         # . . . .
         # . . . .
         # . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . .
         # # . . .
         # . . . .
         # . . . .
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . .
         # # . . .
         # . . . .
         # . . # .
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . .
         # # # . .
         # . . . .
         . . . # .
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . .
         # # # # .
         . . . . .
         . . . # .
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . .
         . # # # .
         . . . # .
         . . . # .
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . # # .
         . . . # .
         . . . # .
         . . . # .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . # .
         . . . # .
         . . . # .
         . . . # #
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . . .
         . . . # .
         . . . # #
         . . . # #
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . . .
         . . . . #
         . . . # #
         . . . # #
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . . #
         . . . . #
         . . . . #
         . . . # #
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . . #
         . . . . #
         . . . . #
         . . . . #
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . . #
         . . . . #
         . . . . #
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . . #
         . . . . #
         . . . . .
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . . #
         . . . . .
         . . . . .
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . #
         . . . . .
         . . . . .
         . . . . .
         . . . . .
-        `)
-    basic.showLeds(`
+        `);
+        basic.showLeds(`
         . . . . .
         . . . . .
         . . . . .
         . . . . .
         . . . . .
-        `)
-    ANIMATION_HAPPY()
-    ANIMATION_DEFAULT()
-}
-// Status
-input.onButtonPressed(Button.AB, function () {
-    isIddle = false
-    ANIMATION_STATUS(healthPoints)
-    isIddle = true
-})
-function ANIMATION_SAD () {
-    basic.showLeds(`
-        . . . . .
-        . # . # .
-        . . . . .
-        . # # # .
-        # . . . #
-        `)
-    ANIMATION_DEFAULT()
-}
-// Abusing
-input.onGesture(Gesture.Shake, function () {
-    if (isDied == false && isIddle == true) {
-        isSleep = false
-        isIddle = false
-        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground)
-        ANIMATION_SHAKE()
-        healthPoints += HEALTH_SHAKE_DEDUCTION
-        isIddle = true
+        `);
+        Animations.DEFAULT();
     }
-})
-function ANIMATION_DEAD () {
-    basic.showLeds(`
-        . # . # .
-        # # . # #
-        . . . . .
-        . # # # .
-        . # . # .
-        `)
-}
-// Feeding
-input.onLogoEvent(TouchButtonEvent.Pressed, function () {
-    isIddle = false
-    music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground)
-    ANIMATION_EAT()
-    healthPoints += HEALTH_EAT_ADDITION
-    isIddle = true
-})
-function ANIMATION_LOOK () {
-    basic.showLeds(`
-        . . . . .
-        . . # . #
-        . . . . .
-        . # # # .
-        . . . . .
-        `)
-    basic.showLeds(`
-        . . . . .
-        # . # . .
-        . . . . .
-        . # # # .
-        . . . . .
-        `)
-}
-let isSleep = false
-let isDied = false
-let cellIndex = 0
-let remainder = 0
-let fullCells = 0
-let healthPerCell = 0
-let isIddle = false
-let healthPoints = 0
-let HEALTH_SHAKE_DEDUCTION = 0
-let HEALTH_GAME_ADDITION = 0
-let HEALTH_EAT_ADDITION = 0
-let HEALTH_MAX = 0
-HEALTH_MAX = 10000
-HEALTH_EAT_ADDITION = 60
-HEALTH_GAME_ADDITION = 30
-let HEALTH_SLEEP_ADDITION = 1
-HEALTH_SHAKE_DEDUCTION = -30
-let HEALTH_DEFAULT_DEDUCTION = -1
-healthPoints = HEALTH_MAX
-isIddle = false
-music._playDefaultBackground(music.builtInPlayableMelody(Melodies.JumpUp), music.PlaybackMode.InBackground)
-ANIMATION_WAKEUP()
-isIddle = true
-// Sleeping
-loops.everyInterval(1000, function () {
-    if (isDied == false && isIddle == true) {
-        if (input.lightLevel() <= 10) {
-            isSleep = true
-            isIddle = false
-            ANIMATION_SLEEP()
-            healthPoints += HEALTH_SLEEP_ADDITION
-        } else {
-            if (isSleep == true) {
-                music.play(music.builtinPlayableSoundEffect(soundExpression.yawn), music.PlaybackMode.UntilDone)
-                ANIMATION_WAKEUP()
-                isSleep = false
-                isIddle = true
+
+    static EAT() {
+        for (let index = 0; index < 2; index++) {
+            basic.showLeds(`
+                . # . # .
+                . . . . .
+                . # # # .
+                . # . # .
+                . . # . .
+            `);
+            Animations.DEFAULT();
+        }
+    }
+
+    static SHAKE() {
+        basic.showLeds(`
+            . . . . .
+            . # . # .
+            . . . . .
+            # # # # #
+            # # # # #
+        `);
+        basic.pause(1000);
+        Animations.DEFAULT();
+    }
+
+    static DEFAULT() {
+        basic.showLeds(`
+            . . . . .
+            . # . # .
+            . . . . .
+            . # # # .
+            . . . . .
+        `);
+    }
+
+    static STATUS(hp: number, max: number) {
+        const CELL_HP = max / 25;
+        const REMAINDER_HP = hp % CELL_HP;
+        const FILLED_CELLS = Math.floor(hp / CELL_HP);
+
+        let cellIndex = 0;
+
+        // Clear before drawing
+        basic.clearScreen();
+
+        for (let y = 0; y <= 4; y++) {
+            for (let x = 0; x <= 4; x++) {
+                cellIndex = x + y * 5;
+
+                if (cellIndex < FILLED_CELLS) {
+                    led.plotBrightness(x, y, 255);
+                } else if (cellIndex == FILLED_CELLS && REMAINDER_HP > 0) {
+                    led.plotBrightness(x, y, Math.floor(REMAINDER_HP / CELL_HP * 255));
+                } else {
+                    led.plotBrightness(x, y, 0);
+                }
             }
         }
+
+        // Keep drawing for a 2 sec before clearing
+        basic.pause(2000);
+
+        // Return to default animation
+        Animations.DEFAULT();
     }
-})
-// Dying
-loops.everyInterval(1000, function () {
-    if (isDied == false && isSleep == false) {
-        healthPoints += HEALTH_DEFAULT_DEDUCTION
-        if (healthPoints < 0) {
-            music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Dadadadum), music.PlaybackMode.InBackground)
-            ANIMATION_DEAD()
-            isDied = true
-            isIddle = false
-        }
+
+    static WAKEUP() {
+        basic.showLeds(`
+            . # . # .
+            . . . . .
+            # # # # #
+            # . . . #
+            . # # # .
+        `);
+        basic.pause(1000);
+        Animations.DEFAULT();
     }
-})
-// Iddling
-loops.everyInterval(600000, function () {
-    if (isDied == false && isSleep == false) {
-        if (isIddle == false) {
-            ANIMATION_DEFAULT()
-        } else {
-            ANIMATION_DEFAULT()
-            basic.pause(10000)
-            ANIMATION_LOOK()
-            ANIMATION_DEFAULT()
-        }
+
+    static SAD() {
+        basic.showLeds(`
+            . . . . .
+            . # . # .
+            . . . . .
+            . # # # .
+            # . . . #
+        `);
+        Animations.DEFAULT();
     }
-})
+
+    static DEAD() {
+        basic.showLeds(`
+            . # . # .
+            # # . # #
+            . . . . .
+            . # # # .
+            . # . # .
+        `);
+    }
+
+    static LOOK() {
+        basic.showLeds(`
+            . . . . .
+            . . # . #
+            . . . . .
+            . # # # .
+            . . . . .
+        `);
+        basic.showLeds(`
+            . . . . .
+            # . # . .
+            . . . . .
+            . # # # .
+            . . . . .
+        `);
+    }
+}
+
+class Sounds {
+    static HAPPY() {
+        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground);
+    }
+
+    static GAME() {
+        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Nyan), music.PlaybackMode.InBackground);
+    }
+
+    static EAT() {
+        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerUp), music.PlaybackMode.InBackground);
+    }
+
+    static SHAKE() {
+        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.PowerDown), music.PlaybackMode.InBackground);
+    }
+
+    static WAKEUP() {
+        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.JumpUp), music.PlaybackMode.InBackground);
+    }
+
+    static SAD() {
+    }
+
+    static DEAD() {
+        music._playDefaultBackground(music.builtInPlayableMelody(Melodies.Dadadadum), music.PlaybackMode.InBackground);
+    }
+
+    static STOP() {
+        music.stopMelody(MelodyStopOptions.Background);
+    }
+}
+
+const pet = new VirtualPet();
